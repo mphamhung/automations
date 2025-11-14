@@ -64,6 +64,7 @@ class Row:
     playerId: int
     gender: str
     teamId: int
+    leagueId: int
     goals: int = 0
     assists: int = 0
     second_assists: int = 0
@@ -90,7 +91,11 @@ def getGameEvents(gameId, teamId):
 def getAllGameEvents():
     return [GameEvent.from_dict(ge) for ge in requests.get(f"{serverUrl}gameEvents").json()]
 
+def getAllTeams():
+    return {t['id']:t['leagueId'] for t in requests.get(f"{serverUrl}teams").json()}
+
 def eventsToRows(events):
+    team_to_league = getAllTeams()
     stats_summary = {}
     for e in events:
         if (e.gameId, e.playerId) not in stats_summary:
@@ -100,6 +105,7 @@ def eventsToRows(events):
                 playerId=e.playerId,
                 teamId=e.teamId,
                 gender=e.playerGender,
+                leagueId=team_to_league[e.teamId],
             )
         stats_summary[(e.gameId,e.playerId)].add(e.eventType, 1)
     return stats_summary
@@ -110,15 +116,16 @@ def gameToRow(game:Game):
     
 if __name__ == "__main__":
     allEvents = getAllGameEvents()
+    print(allEvents[0])
     rows = eventsToRows(allEvents)
     # allGames = getAllGames()
     # gameEvents = getGameEvents(allGames[0].id, allGames[0].awayTeamId)
     # rows = eventsToRows(gameEvents)
     with open('data/tpl_stats_summary.csv', 'w', newline='') as csvfile:
-        fieldnames = ['name', 'gender', 'gameId', 'playerId', 'teamId', 'goals', 'assists', 'second_assists', 'blocks', 'throwaways', 'drops', 'other_passes']
+        fieldnames = ['name', 'gender', 'gameId', 'playerId', 'teamId', 'leagueId', 'goals', 'assists', 'second_assists', 'blocks', 'throwaways', 'drops', 'other_passes']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         for row in rows.values():
             writer.writerow(asdict(row))
 
-    print(rows)
+    # print(rows)
