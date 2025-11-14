@@ -29,6 +29,7 @@ class GameEvent:
     teamId: int
     playerId: int
     playerName: str
+    playerGender: str
     eventType: str
     timestamp: str
     sequence: int
@@ -41,6 +42,7 @@ class GameEvent:
             teamId=env['teamId'],
             playerId=env['player']['id'],
             playerName=env['player']['playerName'],
+            playerGender=env['player']['gender'],
             eventType=env['eventType'],
             timestamp=env['timestamp'],
             sequence=env['sequence'],
@@ -60,6 +62,7 @@ class Row:
     name: str
     gameId: int
     playerId: int
+    gender: str
     teamId: int
     goals: int = 0
     assists: int = 0
@@ -95,7 +98,8 @@ def eventsToRows(events):
                 name=e.playerName,
                 gameId=e.gameId,
                 playerId=e.playerId,
-                teamId=e.teamId
+                teamId=e.teamId,
+                gender=e.playerGender,
             )
         stats_summary[(e.gameId,e.playerId)].add(e.eventType, 1)
     return stats_summary
@@ -111,7 +115,7 @@ if __name__ == "__main__":
     # gameEvents = getGameEvents(allGames[0].id, allGames[0].awayTeamId)
     # rows = eventsToRows(gameEvents)
     with open('data/tpl_stats_summary.csv', 'w', newline='') as csvfile:
-        fieldnames = ['name', 'gameId', 'playerId', 'teamId', 'goals', 'assists', 'second_assists', 'blocks', 'throwaways', 'drops', 'other_passes']
+        fieldnames = ['name', 'gender', 'gameId', 'playerId', 'teamId', 'goals', 'assists', 'second_assists', 'blocks', 'throwaways', 'drops', 'other_passes']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         for row in rows.values():
