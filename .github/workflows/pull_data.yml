@@ -28,3 +28,11 @@ jobs:
       # Runs a single command using the runners shell
       - name: pull data from tpl
         run: python scripts/pull_tpl_data.py
+
+      - name: Commit files
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add tpl_stats_summary.csv
+          git commit -m 'Update tpl stats summary' || echo "No changes to commit"
+          git push
