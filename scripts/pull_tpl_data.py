@@ -1,6 +1,8 @@
 import requests
 from dataclasses import dataclass, asdict
 import csv
+import pandas as pd
+
 serverUrl = "https://tplapp.onrender.com/"
 @dataclass
 class Game:
@@ -121,11 +123,13 @@ if __name__ == "__main__":
     # allGames = getAllGames()
     # gameEvents = getGameEvents(allGames[0].id, allGames[0].awayTeamId)
     # rows = eventsToRows(gameEvents)
-    with open('data/tpl_stats_summary.csv', 'w', newline='') as csvfile:
-        fieldnames = ['name', 'gender', 'gameId', 'playerId', 'teamId', 'leagueId', 'goals', 'assists', 'second_assists', 'blocks', 'throwaways', 'drops', 'other_passes']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
-        for row in rows.values():
-            writer.writerow(asdict(row))
+    df = pd.DataFrame(rows)
+    df.to_json("data/tpl_stats_summary.json")
+    # with open('data/tpl_stats_summary.csv', 'w', newline='') as csvfile:
+    #     fieldnames = ['name', 'gender', 'gameId', 'playerId', 'teamId', 'leagueId', 'goals', 'assists', 'second_assists', 'blocks', 'throwaways', 'drops', 'other_passes']
+    #     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+    #     writer.writeheader()
+    #     for row in rows.values():
+    #         writer.writerow(asdict(row))
 
     # print(rows)
