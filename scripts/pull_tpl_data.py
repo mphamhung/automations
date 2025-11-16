@@ -2,6 +2,7 @@ import requests
 from dataclasses import dataclass, asdict
 import csv
 import pandas as pd
+import json
 
 serverUrl = "https://tplapp.onrender.com/"
 @dataclass
@@ -118,12 +119,14 @@ def gameToRow(game:Game):
     
 if __name__ == "__main__":
     allEvents = getAllGameEvents()
-    # print(allEvents[0])
     rows = eventsToRows(allEvents)
     # allGames = getAllGames()
     # gameEvents = getGameEvents(allGames[0].id, allGames[0].awayTeamId)
     # rows = eventsToRows(gameEvents)
     # print(rows)
-    df = pd.DataFrame(rows.values())
-    df.to_json("data/tpl_stats_summary.json")
-    df.to_csv("data/tpl_stats_summary.csv")
+
+    with open("data/tpl_stats_summary.json", "w", encoding="utf-8") as file:
+        json.dump([asdict(row) for row in rows.values()], file)
+
+    # df = pd.DataFrame(rows.values())
+    # df.to_csv("data/tpl_stats_summary.csv")
