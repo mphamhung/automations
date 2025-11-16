@@ -118,12 +118,13 @@ def gameToRow(game:Game):
     
 if __name__ == "__main__":
     allEvents = getAllGameEvents()
-    print(allEvents[0])
+    # print(allEvents[0])
     rows = eventsToRows(allEvents)
     # allGames = getAllGames()
     # gameEvents = getGameEvents(allGames[0].id, allGames[0].awayTeamId)
     # rows = eventsToRows(gameEvents)
-    df = pd.DataFrame(rows)
+    # print(rows)
+    df = pd.DataFrame(rows.values())
     df.to_json("data/tpl_stats_summary.json")
     # with open('data/tpl_stats_summary.csv', 'w', newline='') as csvfile:
     #     fieldnames = ['name', 'gender', 'gameId', 'playerId', 'teamId', 'leagueId', 'goals', 'assists', 'second_assists', 'blocks', 'throwaways', 'drops', 'other_passes']
