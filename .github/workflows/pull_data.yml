@@ -36,7 +36,7 @@ jobs:
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add data/tpl_stats_summary.csv data/tpl_stats_summary.json
+          git add data
           # include an ISO-8601 UTC timestamp in the commit message
           TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           git commit -m "Update tpl stats summary: ${TIMESTAMP}" || echo "No changes to commit"
