@@ -11,6 +11,8 @@ class Game:
     leagueId: int
     awayTeamId: int
     homeTeamId: int
+    homeTeam: str
+    awayTeam: str
     location: str
     time: str
 
@@ -21,6 +23,8 @@ class Game:
             leagueId = env['leagueId'],
             awayTeamId = env['awayTeamId'],
             homeTeamId = env['homeTeamId'],
+            awayTeam = env['awayTeam'],
+            homeTeam = env['homeTeam'],
             location = env['location'],
             time = env['time'],
         )
