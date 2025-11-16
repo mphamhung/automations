@@ -116,17 +116,21 @@ def eventsToRows(events):
 def gameToRow(game:Game):
     for g in eventsToRows(getGameEvents(game.id, game.awayTeamId)).values():
         print(g)
+        
     
 if __name__ == "__main__":
     allEvents = getAllGameEvents()
     rows = eventsToRows(allEvents)
-    # allGames = getAllGames()
+    allGames = getAllGames()
     # gameEvents = getGameEvents(allGames[0].id, allGames[0].awayTeamId)
     # rows = eventsToRows(gameEvents)
     # print(rows)
 
     with open("data/tpl_stats_summary.json", "w", encoding="utf-8") as file:
         json.dump([asdict(row) for row in rows.values()], file)
+
+    with open("data/tpl_game_info.json", "w", encoding="utf-8") as file:
+        json.dump([asdict(row) for row in allGames], file)
 
     # df = pd.DataFrame(rows.values())
     # df.to_csv("data/tpl_stats_summary.csv")
