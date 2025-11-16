@@ -126,11 +126,4 @@ if __name__ == "__main__":
     # print(rows)
     df = pd.DataFrame(rows.values())
     df.to_json("data/tpl_stats_summary.json")
-    # with open('data/tpl_stats_summary.csv', 'w', newline='') as csvfile:
-    #     fieldnames = ['name', 'gender', 'gameId', 'playerId', 'teamId', 'leagueId', 'goals', 'assists', 'second_assists', 'blocks', 'throwaways', 'drops', 'other_passes']
-    #     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-    #     writer.writeheader()
-    #     for row in rows.values():
-    #         writer.writerow(asdict(row))
-
-    # print(rows)
+    df.to_csv("data/tpl_stats_summary.csv")
