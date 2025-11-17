@@ -15,6 +15,7 @@ class Game:
     awayTeam: str
     location: str
     time: str
+    date: str
 
     @classmethod
     def from_dict(cls, env):      
@@ -27,6 +28,7 @@ class Game:
             homeTeam = env['homeTeam'],
             location = env['location'],
             time = env['time'],
+            date = env['date'],
         )
 
 @dataclass
