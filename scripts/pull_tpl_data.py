@@ -65,6 +65,7 @@ _MAPPING = {
     "TA": "throwaways",
     "Drop": "drops",
     "": "other_passes",
+    "pickup": "pickup"
     }
 @dataclass
 class Row:
@@ -81,6 +82,7 @@ class Row:
     throwaways: int = 0
     drops: int = 0
     other_passes: int = 0
+    pickup: int = 0
 
 
     def add(self, key,value):
@@ -106,6 +108,7 @@ def getAllTeams():
 def eventsToRows(events):
     team_to_league = getAllTeams()
     stats_summary = {}
+    last_e = None
     for e in events:
         if (e.gameId, e.playerId) not in stats_summary:
             stats_summary[(e.gameId, e.playerId)] = Row(
@@ -117,6 +120,9 @@ def eventsToRows(events):
                 leagueId=team_to_league[e.teamId],
             )
         stats_summary[(e.gameId,e.playerId)].add(e.eventType, 1)
+
+        if last_e.eventType in  {"Goal", "D", "TA", "Drop"}:
+            stats_summary[(e.gameId,e.playerId)].add("pickup", 1)
     return stats_summary
 
 def gameToRow(game:Game):
