@@ -121,8 +121,9 @@ def eventsToRows(events):
             )
         stats_summary[(e.gameId,e.playerId)].add(e.eventType, 1)
 
-        if last_e.eventType in  {"Goal", "D", "TA", "Drop"}:
+        if last_e and last_e.eventType in  {"Goal", "D", "TA", "Drop"}:
             stats_summary[(e.gameId,e.playerId)].add("pickup", 1)
+        last_e = e
     return stats_summary
 
 def gameToRow(game:Game):
