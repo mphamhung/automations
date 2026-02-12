@@ -145,5 +145,5 @@ if __name__ == "__main__":
     with open("data/tpl_game_info.json", "w", encoding="utf-8") as file:
         json.dump([asdict(row) for row in allGames], file)
 
-    # df = pd.DataFrame(rows.values())
-    # df.to_csv("data/tpl_stats_summary.csv")
+    df = pd.DataFrame(rows.values())
+    df.to_csv("data/tpl_stats_summary.csv")
