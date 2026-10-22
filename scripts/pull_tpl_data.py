@@ -1,6 +1,5 @@
 import requests
 from dataclasses import dataclass, asdict
-import csv
 import pandas as pd
 import json
 import time
@@ -40,7 +39,10 @@ def request_json(path: str):
             raise RuntimeError(f"Failed to fetch {url}. {last_error}") from exc
 
         if response.status_code >= 500:
-            last_error = f"HTTP {response.status_code} with empty/transient server response"
+            last_error = (
+                f"HTTP {response.status_code} with empty/transient "
+                "server response"
+            )
             if attempt < MAX_RETRIES:
                 time.sleep(attempt)
                 continue
@@ -62,7 +64,8 @@ def request_json(path: str):
 
         if not response.text.strip():
             raise RuntimeError(
-                f"Failed to parse JSON from {url}: empty response body (HTTP {response.status_code})."
+                "Failed to parse JSON from "
+                f"{url}: empty response body (HTTP {response.status_code})."
             )
 
         try:
@@ -70,11 +73,15 @@ def request_json(path: str):
         except requests.exceptions.JSONDecodeError as exc:
             preview = response.text[:300].strip()
             raise RuntimeError(
-                f"Failed to parse JSON from {url}: content-type={content_type or 'unknown'}, "
+                "Failed to parse JSON from "
+                f"{url}: content-type={content_type or 'unknown'}, "
                 f"body={preview!r}"
             ) from exc
 
-    raise RuntimeError(f"Failed to fetch {url} after {MAX_RETRIES} attempts. Last error: {last_error}")
+    raise RuntimeError(
+        f"Failed to fetch {url} after {MAX_RETRIES} attempts. "
+        f"Last error: {last_error}"
+    )
 
 
 @dataclass
@@ -90,18 +97,19 @@ class Game:
     date: str
 
     @classmethod
-    def from_dict(cls, env):      
+    def from_dict(cls, env):
         return cls(
-            id = env['id'],
-            leagueId = env['leagueId'],
-            awayTeamId = env['awayTeamId'],
-            homeTeamId = env['homeTeamId'],
-            awayTeam = env['awayTeam'],
-            homeTeam = env['homeTeam'],
-            location = env['location'],
-            time = env['time'],
-            date = env['date'],
+            id=env["id"],
+            leagueId=env["leagueId"],
+            awayTeamId=env["awayTeamId"],
+            homeTeamId=env["homeTeamId"],
+            awayTeam=env["awayTeam"],
+            homeTeam=env["homeTeam"],
+            location=env["location"],
+            time=env["time"],
+            date=env["date"],
         )
+
 
 @dataclass
 class GameEvent:
@@ -116,19 +124,20 @@ class GameEvent:
     sequence: int
 
     @classmethod
-    def from_dict(cls, env):      
+    def from_dict(cls, env):
         return cls(
-            id=env['_id'],
-            gameId=env['gameId'],
-            teamId=env['teamId'],
-            playerId=env['player']['id'],
-            playerName=env['player']['playerName'],
-            playerGender=env['player']['gender'],
-            eventType=env['eventType'],
-            timestamp=env['timestamp'],
-            sequence=env['sequence'],
+            id=env["_id"],
+            gameId=env["gameId"],
+            teamId=env["teamId"],
+            playerId=env["player"]["id"],
+            playerName=env["player"]["playerName"],
+            playerGender=env["player"]["gender"],
+            eventType=env["eventType"],
+            timestamp=env["timestamp"],
+            sequence=env["sequence"],
         )
-    
+
+
 _MAPPING = {
     "Goal": "goals",
     "Assist": "assists",
@@ -137,8 +146,10 @@ _MAPPING = {
     "TA": "throwaways",
     "Drop": "drops",
     "": "other_passes",
-    "pickup": "pickup"
-    }
+    "pickup": "pickup",
+}
+
+
 @dataclass
 class Row:
     name: str
@@ -156,25 +167,33 @@ class Row:
     other_passes: int = 0
     pickup: int = 0
 
-
-    def add(self, key,value):
+    def add(self, key, value):
         key = _MAPPING[key]
         if hasattr(self, key):
             setattr(self, key, getattr(self, key) + value)
 
+
 def getAllPlayers():
     return request_json("players")
+
 
 def getAllGames():
     return [Game.from_dict(g) for g in request_json("games")]
 
+
 def getGameEvents(gameId, teamId):
-    return [GameEvent.from_dict(ge) for ge in request_json(f"gameEvents/{gameId}/{teamId}")]
+    return [
+        GameEvent.from_dict(ge)
+        for ge in request_json(f"gameEvents/{gameId}/{teamId}")
+    ]
+
 
 def getAllGameEvents():
+    bulk_exc = None
     try:
         return [GameEvent.from_dict(ge) for ge in request_json("gameEvents")]
-    except RuntimeError as bulk_exc:
+    except RuntimeError as exc:
+        bulk_exc = exc
         print(
             "Warning: bulk gameEvents request failed; "
             "falling back to per-game/team requests.",
@@ -222,15 +241,15 @@ def getAllGameEvents():
         example_error = failed_requests[0][2]
 
     raise RuntimeError(
-        (
-            "Unable to fetch any game events from per-game endpoints "
-            f"after {MAX_FAILED_REQUEST_RETRIES} retries. "
-        )
+        "Unable to fetch any game events from per-game endpoints "
+        f"after {MAX_FAILED_REQUEST_RETRIES} retries. "
         f"Example error: {example_error}"
     ) from bulk_exc
 
+
 def getAllTeams():
-    return {t['id']: t['leagueId'] for t in request_json("teams")}
+    return {t["id"]: t["leagueId"] for t in request_json("teams")}
+
 
 def eventsToRows(events):
     team_to_league = getAllTeams()
@@ -246,18 +265,19 @@ def eventsToRows(events):
                 gender=e.playerGender,
                 leagueId=team_to_league[e.teamId],
             )
-        stats_summary[(e.gameId,e.playerId)].add(e.eventType, 1)
+        stats_summary[(e.gameId, e.playerId)].add(e.eventType, 1)
 
-        if last_e and last_e.eventType in  {"Goal", "D", "TA", "Drop"}:
-            stats_summary[(e.gameId,e.playerId)].add("pickup", 1)
+        if last_e and last_e.eventType in {"Goal", "D", "TA", "Drop"}:
+            stats_summary[(e.gameId, e.playerId)].add("pickup", 1)
         last_e = e
     return stats_summary
 
-def gameToRow(game:Game):
+
+def gameToRow(game: Game):
     for g in eventsToRows(getGameEvents(game.id, game.awayTeamId)).values():
         print(g)
-        
-    
+
+
 if __name__ == "__main__":
     try:
         allEvents = getAllGameEvents()
@@ -267,7 +287,9 @@ if __name__ == "__main__":
         # rows = eventsToRows(gameEvents)
         # print(rows)
 
-        with open("data/tpl_stats_summary.json", "w", encoding="utf-8") as file:
+        with open(
+            "data/tpl_stats_summary.json", "w", encoding="utf-8"
+        ) as file:
             json.dump([asdict(row) for row in rows.values()], file)
 
         with open("data/tpl_game_info.json", "w", encoding="utf-8") as file:
