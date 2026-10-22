@@ -4,6 +4,7 @@ import pandas as pd
 import json
 import time
 import sys
+from typing import Iterable
 
 serverUrl = "https://tplapp.onrender.com/"
 
@@ -22,6 +23,17 @@ def _rate_limit_delay_seconds(response, attempt: int) -> float:
 
     # Exponential backoff when Retry-After is missing or invalid.
     return min(2 ** (attempt - 1), 30)
+
+
+def _warning_failed_requests(failed_requests):
+    if failed_requests:
+        print(
+            (
+                f"Warning: {len(failed_requests)} per-game event requests "
+                f"failed after {MAX_FAILED_REQUEST_RETRIES} retries."
+            ),
+            file=sys.stderr,
+        )
 
 
 def request_json(path: str):
@@ -188,27 +200,19 @@ def getGameEvents(gameId, teamId):
     ]
 
 
-def getAllGameEvents():
-    bulk_exc = None
-    try:
-        return [GameEvent.from_dict(ge) for ge in request_json("gameEvents")]
-    except RuntimeError as exc:
-        bulk_exc = exc
-        print(
-            "Warning: bulk gameEvents request failed; "
-            "falling back to per-game/team requests.",
-            file=sys.stderr,
-        )
+def _game_team_pairs(games: Iterable[Game]):
+    return [
+        (game.id, team_id)
+        for game in games
+        for team_id in (game.awayTeamId, game.homeTeamId)
+    ]
 
+
+def _fetch_events_for_pairs(game_team_pairs):
     all_events = []
-    pending_requests = []
-
-    for game in getAllGames():
-        pending_requests.append((game.id, game.awayTeamId))
-        pending_requests.append((game.id, game.homeTeamId))
-
     failed_requests = []
-    for game_id, team_id in pending_requests:
+
+    for game_id, team_id in game_team_pairs:
         try:
             all_events.extend(getGameEvents(game_id, team_id))
         except RuntimeError as team_exc:
@@ -225,26 +229,7 @@ def getAllGameEvents():
                 next_failures.append((game_id, team_id, str(retry_exc)))
         failed_requests = next_failures
 
-    if all_events:
-        if failed_requests:
-            print(
-                (
-                    f"Warning: {len(failed_requests)} per-game event requests "
-                    f"failed after {MAX_FAILED_REQUEST_RETRIES} retries."
-                ),
-                file=sys.stderr,
-            )
-        return all_events
-
-    example_error = "No event requests were made."
-    if failed_requests:
-        example_error = failed_requests[0][2]
-
-    raise RuntimeError(
-        "Unable to fetch any game events from per-game endpoints "
-        f"after {MAX_FAILED_REQUEST_RETRIES} retries. "
-        f"Example error: {example_error}"
-    ) from bulk_exc
+    return all_events, failed_requests
 
 
 def getAllTeams():
@@ -273,29 +258,70 @@ def eventsToRows(events):
     return stats_summary
 
 
-def gameToRow(game: Game):
-    for g in eventsToRows(getGameEvents(game.id, game.awayTeamId)).values():
-        print(g)
+def _load_json_file(path):
+    try:
+        with open(path, "r", encoding="utf-8") as json_file:
+            return json.load(json_file)
+    except FileNotFoundError:
+        return []
+
+
+def _fetch_game_events_for_games(games):
+    all_events, failed_requests = _fetch_events_for_pairs(
+        _game_team_pairs(games)
+    )
+    _warning_failed_requests(failed_requests)
+    return all_events
+
+
+def _merge_rows(existing_rows_list, new_rows_list):
+    return {
+        (row.gameId, row.playerId): row
+        for row in [*existing_rows_list, *new_rows_list]
+    }
 
 
 if __name__ == "__main__":
     try:
-        allEvents = getAllGameEvents()
-        rows = eventsToRows(allEvents)
-        allGames = getAllGames()
-        # gameEvents = getGameEvents(allGames[0].id, allGames[0].awayTeamId)
-        # rows = eventsToRows(gameEvents)
-        # print(rows)
+        all_games = getAllGames()
+        existing_game_data = _load_json_file("data/tpl_game_info.json")
+        existing_row_data = _load_json_file("data/tpl_stats_summary.json")
+
+        existing_games = [Game.from_dict(g) for g in existing_game_data]
+        existing_rows = [Row(**row) for row in existing_row_data]
+        existing_game_ids = {game.id for game in existing_games}
+
+        new_games = [
+            game for game in all_games if game.id not in existing_game_ids
+        ]
+        new_rows = []
+
+        if new_games:
+            print(
+                f"Found {len(new_games)} new games. Fetching events...",
+                file=sys.stderr,
+            )
+            new_rows = list(
+                eventsToRows(_fetch_game_events_for_games(new_games)).values()
+            )
+        else:
+            print(
+                "No new games found. Existing data is up to date.",
+                file=sys.stderr,
+            )
+
+        merged_rows = _merge_rows(existing_rows, new_rows)
+        merged_games = existing_games + new_games
 
         with open(
             "data/tpl_stats_summary.json", "w", encoding="utf-8"
         ) as file:
-            json.dump([asdict(row) for row in rows.values()], file)
+            json.dump([asdict(row) for row in merged_rows.values()], file)
 
         with open("data/tpl_game_info.json", "w", encoding="utf-8") as file:
-            json.dump([asdict(row) for row in allGames], file)
+            json.dump([asdict(row) for row in merged_games], file)
 
-        df = pd.DataFrame(rows.values())
+        df = pd.DataFrame(merged_rows.values())
         df.to_csv("data/tpl_stats_summary.csv")
     except RuntimeError as exc:
         print(f"Data pull failed: {exc}", file=sys.stderr)
