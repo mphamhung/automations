@@ -274,6 +274,16 @@ def _fetch_game_events_for_games(games):
     return all_events
 
 
+def _missing_game_team_pairs(games, existing_rows_list):
+    existing_pairs = {
+        (row.gameId, row.teamId)
+        for row in existing_rows_list
+    }
+    return [
+        pair for pair in _game_team_pairs(games) if pair not in existing_pairs
+    ]
+
+
 def _merge_rows(existing_rows_list, new_rows_list):
     return {
         (row.gameId, row.playerId): row
@@ -294,19 +304,33 @@ if __name__ == "__main__":
         new_games = [
             game for game in all_games if game.id not in existing_game_ids
         ]
+        missing_game_team_pairs = _missing_game_team_pairs(
+            all_games, existing_rows
+        )
         new_rows = []
 
-        if new_games:
+        if missing_game_team_pairs:
             print(
-                f"Found {len(new_games)} new games. Fetching events...",
+                (
+                    "Found "
+                    f"{len(missing_game_team_pairs)} missing game/team "
+                    "pairs. Fetching events..."
+                ),
                 file=sys.stderr,
             )
+            fetched_events, failed_pair_requests = _fetch_events_for_pairs(
+                missing_game_team_pairs
+            )
+            _warning_failed_requests(failed_pair_requests)
             new_rows = list(
-                eventsToRows(_fetch_game_events_for_games(new_games)).values()
+                eventsToRows(fetched_events).values()
             )
         else:
             print(
-                "No new games found. Existing data is up to date.",
+                (
+                    "No missing game/team pairs found. "
+                    "Existing data is up to date."
+                ),
                 file=sys.stderr,
             )
 
