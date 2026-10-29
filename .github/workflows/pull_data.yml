@@ -22,7 +22,7 @@ jobs:
     # This workflow contains a single job called "build"
     runs-on: ubuntu-latest
 
-    # Steps represent a sequence of tasks that run in this job
+    # Steps represent the tasks that will run in this job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v4
